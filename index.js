@@ -1,5 +1,6 @@
 var moment = require("moment");
 var express = require("express");
+var ObjectId = require("mongodb").ObjectID;
 var bodyParser = require("body-parser");
 var app = express();
 app.listen(5002);
@@ -82,15 +83,15 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       });
   });
 
-  app.get("/questapi/:id", function (req, res) {
-    console.log("apicalled");
-    var o_id = new ObjectId(id);
-    db.mydb.find({ _id: o_id });
+  app.get("/questone/:gotid", function (req, res) {
+    let id = req.params.gotid;
+    // /console.log(id);
     mydb
       .collection("questions")
-      .find({ id })
+      .find({ _id: ObjectId(id) })
       .toArray(function (err, data) {
         if (err) throw error;
+        console.log(data);
         res.send(data);
       });
   });
