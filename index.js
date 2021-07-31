@@ -60,10 +60,22 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
     // let bodyJson = JSON.parse(formData);
     console.log(formData);
 
-    mydb.collection("questions").insertOne(formData, function (err, res) {
-      if (err) throw err;
-      console.log("1 document inserted");
+    mydb.collection("questions").insertOne(formData, (err, result) => {
+      if (err) {
+        res.send({ error: "Ann error has occured" });
+      } else {
+        res.send(result.ops[0]);
+      }
     });
+
+    // mydb
+    //   .collection("questions")
+    //   .insertOne(formData)
+    //   .toArray(function (err, res) {
+    //     if (err) throw err;
+    //     console.log("1 document inserted");
+    //   });
+    // res.send(res);
   });
 
   // app.post("/questionpost", jsonParser, function (req, res) {
