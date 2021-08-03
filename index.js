@@ -67,16 +67,42 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
         res.send(result.ops[0]);
       }
     });
-
-    // mydb
-    //   .collection("questions")
-    //   .insertOne(formData)
-    //   .toArray(function (err, res) {
-    //     if (err) throw err;
-    //     console.log("1 document inserted");
-    //   });
-    // res.send(res);
   });
+
+  app.post("/answerpost", function (req, res) {
+    let formData = req.body;
+    // let bodyJson = JSON.parse(formData);
+    // console.log(formData);
+
+    mydb.collection("answers").insertOne(formData, (err, result) => {
+      if (err) {
+        res.send({ error: "Ann error has occured" });
+      } else {
+        res.send(result.ops[0]);
+      }
+    });
+  });
+
+  app.get("/answersapi:gotid", function (req, res) {
+    let param = req.query.id;
+    console.log(param);
+    mydb
+      .collection("answers")
+      .find({ question_id: param })
+      .toArray(function (err, data) {
+        if (err) throw error;
+        res.send(data);
+      });
+  });
+
+  // mydb
+  //   .collection("questions")
+  //   .insertOne(formData)
+  //   .toArray(function (err, res) {
+  //     if (err) throw err;
+  //     console.log("1 document inserted");
+  //   });
+  // res.send(res);
 
   // app.post("/questionpost", jsonParser, function (req, res) {
   //   let data = req;
