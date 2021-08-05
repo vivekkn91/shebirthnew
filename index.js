@@ -3,7 +3,15 @@ var express = require("express");
 var ObjectId = require("mongodb").ObjectID;
 var bodyParser = require("body-parser");
 var app = express();
-app.listen(5002);
+
+if (process.env.NODE_ENV == "production") {
+  app.use(express.static("portfolio/build"));
+  const path = require("path");
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "portfolio", "build", "index.html"));
+  });
+}
+app.listen(process.env.PORT || 5002);
 const multer = require("multer");
 const upload = multer();
 var bodyParser = require("body-parser");
