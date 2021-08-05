@@ -83,12 +83,12 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
     });
   });
 
-  app.get("/answersapi:gotid", function (req, res) {
-    let param = req.query.id;
-    console.log(param);
+  app.get("/answersapi/:gotid", function (req, res) {
+    let id = req.params.gotid;
+    console.log(id);
     mydb
       .collection("answers")
-      .find({ question_id: param })
+      .find({ question_id: id })
       .toArray(function (err, data) {
         if (err) throw error;
         res.send(data);
@@ -129,7 +129,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       .find({ _id: ObjectId(id) })
       .toArray(function (err, data) {
         if (err) throw error;
-        console.log(data);
+        //console.log(data);
         res.send(data);
       });
   });
