@@ -129,6 +129,69 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       });
   });
 
+  //http://localhost:5002/answerpost
+  // increment;
+
+  app.post("/increment", function (req, res) {
+    let id = req.body;
+    var correctcount = id.correctcount + 1;
+    //var ansid = id.Answer_id;
+    var realid = ObjectId(id.Answer_id);
+    console.log(correctcount);
+
+    // var myquery = { address: "Valley 345" };
+    // var newvalues = { $set: { name: "Mickey", address: "Canyon 123" } };
+    // dbo
+    //   .collection("customers")
+    //   .updateOne(myquery, newvalues, function (err, res) {
+    //     if (err) throw err;
+    //     console.log("1 document updated");
+    //     db.close();
+    //   });
+
+    mydb
+      .collection("answers")
+      .updateOne(
+        { _id: realid },
+        { $set: { correctcount: correctcount } },
+        function (err, data) {
+          if (err) throw err;
+          console.log("1 document updated");
+          res.send(data);
+        }
+      );
+  });
+
+  app.post("/decrementer", function (req, res) {
+    let id = req.body;
+    var wrongcount = id.wrongcount - 1;
+    //var ansid = id.Answer_id;
+    var realid = ObjectId(id.Answer_id);
+    console.log(wrongcount);
+
+    // var myquery = { address: "Valley 345" };
+    // var newvalues = { $set: { name: "Mickey", address: "Canyon 123" } };
+    // dbo
+    //   .collection("customers")
+    //   .updateOne(myquery, newvalues, function (err, res) {
+    //     if (err) throw err;
+    //     console.log("1 document updated");
+    //     db.close();
+    //   });
+
+    mydb
+      .collection("answers")
+      .updateOne(
+        { _id: realid },
+        { $set: { wrongcount: wrongcount } },
+        function (err, data) {
+          if (err) throw err;
+          console.log("1 document updated");
+          res.send(data);
+        }
+      );
+  });
+
   app.get("/questone/:gotid", function (req, res) {
     let id = req.params.gotid;
     // /console.log(id);
