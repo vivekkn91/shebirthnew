@@ -12,6 +12,10 @@ var app = express();
 //     res.sendFile(path.resolve(__dirname, "portfolio", "build", "index.html"));
 //   });
 // }
+const PORT = process.env.PORT || 5002;
+
+express().listen(PORT, () => console.log(`Listening on ${PORT}`));
+
 app.listen(process.env.PORT || 5002);
 const multer = require("multer");
 const upload = multer();
