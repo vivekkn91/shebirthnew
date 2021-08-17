@@ -1,16 +1,17 @@
 var moment = require("moment");
 var express = require("express");
 var ObjectId = require("mongodb").ObjectID;
+const { ExploreTrendRequest } = require("g-trends");
 var bodyParser = require("body-parser");
 var app = express();
 
-if (process.env.NODE_ENV == "production") {
-  app.use(express.static("portfolio/build"));
-  const path = require("path");
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "portfolio", "build", "index.html"));
-  });
-}
+// if (process.env.NODE_ENV == "production") {
+//   app.use(express.static("portfolio/build"));
+//   const path = require("path");
+//   app.get("*", (req, res) => {
+//     res.sendFile(path.resolve(__dirname, "portfolio", "build", "index.html"));
+//   });
+// }
 app.listen(process.env.PORT || 5002);
 const multer = require("multer");
 const upload = multer();
@@ -202,6 +203,26 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
         if (err) throw error;
         //console.log(data);
         res.send(data);
+      });
+  });
+
+  //trend api call
+
+  app.post("/trend", function () {
+    const explorer = new ExploreTrendRequest();
+    console.log("api calling 1");
+    explorer
+      .addKeyword("Dream about snakes")
+      .compare("Dream about falling")
+      .download()
+      .then((csv) => {
+        console.log(
+          "[✔] Done, take a look at your beautiful CSV formatted data!"
+        );
+        console.log(csv);
+      })
+      .catch((error) => {
+        console.log("[!] Failed fetching csv data due to an error", error);
       });
   });
 });

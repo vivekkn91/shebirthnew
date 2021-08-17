@@ -12,6 +12,8 @@
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "g-trends": "0.0.9",
+    "google-trends-api": "^4.9.2",
     "mogodb": "0.0.1-security",
     "moment": "^2.29.1",
     "mongoose": "^5.13.3",
