@@ -14,7 +14,7 @@ var app = express();
 // }
 const PORT = process.env.PORT || 5002;
 
-express().listen(PORT, () => console.log(`Listening on ${PORT}`));
+//express().listen(PORT, () => console.log(`Listening on ${PORT}`));
 
 app.listen(process.env.PORT || 5002);
 const multer = require("multer");
@@ -212,21 +212,21 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
 
   //trend api call
 
-  app.post("/trend", function () {
-    const explorer = new ExploreTrendRequest();
-    console.log("api calling 1");
-    explorer
-      .addKeyword("Dream about snakes")
-      .compare("Dream about falling")
-      .download()
-      .then((csv) => {
-        console.log(
-          "[✔] Done, take a look at your beautiful CSV formatted data!"
-        );
-        console.log(csv);
-      })
-      .catch((error) => {
-        console.log("[!] Failed fetching csv data due to an error", error);
-      });
-  });
+  // app.post("/trend", function () {
+  //   const explorer = new ExploreTrendRequest();
+  //   console.log("api calling 1");
+  //   explorer
+  //     .addKeyword("Dream about snakes")
+  //     .compare("Dream about falling")
+  //     .download()
+  //     .then((csv) => {
+  //       console.log(
+  //         "[✔] Done, take a look at your beautiful CSV formatted data!"
+  //       );
+  //       console.log(csv);
+  //     })
+  //     .catch((error) => {
+  //       console.log("[!] Failed fetching csv data due to an error", error);
+  //     });
+  // });
 });
