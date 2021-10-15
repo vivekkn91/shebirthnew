@@ -26,7 +26,8 @@ var MongoClient = require("mongodb").MongoClient;
 var id = require("mongodb").ObjectID;
 
 //Create a database named "mydb":    sudo service mongod start
-var url = "mongodb://localhost:27017/";
+var url =
+  "mongodb+srv://vivekkn91:@cluster0.8ykw3.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 
 MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
   if (err) throw err;
