@@ -1,0 +1,10 @@
+ cluster0-shard-00-02.8ykw3.mongodb.net:27017  
+mydb
+answers
+questions
+
+
+
+mongoimport --uri mongodb+srv://vivekkn91:jKTG22eh9RqlRhVf@cluster0.8ykw3.mongodb.net/mydb -c answers --file newdbexport.json --jsonArray
+
+ mongoimport --host  cluster0-shard-00-02.8ykw3.mongodb.net:27017 --db mydb --collection questions --type json --file /home/vivek/mycodes/ask-backend/newdbexportquestions.json --jsonArray --authenticationDatabase admin --ssl --username vivekkn91 --password jKTG22eh9RqlRhVf

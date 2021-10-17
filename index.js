@@ -3,8 +3,9 @@ var express = require("express");
 var ObjectId = require("mongodb").ObjectID;
 const { ExploreTrendRequest } = require("g-trends");
 var bodyParser = require("body-parser");
+var cors = require("cors");
 var app = express();
-
+app.use(cors());
 // if (process.env.NODE_ENV == "production") {
 //   app.use(express.static("portfolio/build"));
 //   const path = require("path");
@@ -27,7 +28,7 @@ var id = require("mongodb").ObjectID;
 
 //Create a database named "mydb":    sudo service mongod start
 var url =
-  "mongodb+srv://vivekkn91:@cluster0.8ykw3.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+  "mongodb+srv://vivekkn91:<jKTG22eh9RqlRhVf>@cluster0.8ykw3.mongodb.net/mydb?retryWrites=true&w=majority";
 
 MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
   if (err) throw err;
