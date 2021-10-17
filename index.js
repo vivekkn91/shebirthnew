@@ -48,7 +48,10 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
 
   app.use(function (req, res, next) {
     // Website you wish to allow to connect
-    res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+    res.setHeader(
+      "Access-Control-Allow-Origin",
+      "https://cocky-franklin-dc0499.netlify.app"
+    );
 
     // Request methods you wish to allow
     res.setHeader(
