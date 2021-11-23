@@ -1,6 +1,7 @@
 var moment = require("moment");
 var express = require("express");
 var ObjectId = require("mongodb").ObjectID;
+var googleTrends = require("google-trends-api");
 const { ExploreTrendRequest } = require("g-trends");
 var bodyParser = require("body-parser");
 var cors = require("cors");
@@ -217,6 +218,21 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
 
   //trend api call
 
+  app.get("/trend", function (req, res) {
+    googleTrends.dailyTrends(
+      {
+        trendDate: new Date("2021-11-23"),
+        geo: "IN",
+      },
+      function (err, results) {
+        if (err) {
+          console.log(err);
+        } else {
+          console.log(results);
+        }
+      }
+    );
+  });
   // app.post("/trend", function () {
   //   const explorer = new ExploreTrendRequest();
   //   console.log("api calling 1");
