@@ -77,7 +77,14 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
   app.post("/questionpost", function (req, res) {
     let formData = req.body;
     // let bodyJson = JSON.parse(formData);
-    console.log(formData);
+    console.log(formData.url);
+
+    var fs = require("fs");
+    var logger = fs.createWriteStream("sitemap.txt", {
+      flags: "a", // 'a' means appending (old data will be preserved)
+    });
+
+    logger.write(formData.url); // append string to your file
 
     mydb.collection("questions").insertOne(formData, (err, result) => {
       if (err) {
