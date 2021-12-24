@@ -79,18 +79,20 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
     // let bodyJson = JSON.parse(formData);
     console.log(formData.url);
 
-    var fs = require("fs");
-    var logger = fs.createWriteStream("sitemap.txt", {
-      flags: "a", // 'a' means appending (old data will be preserved)
-    });
-
-    logger.write(formData.url); // append string to your file
+    // append string to your file
 
     mydb.collection("questions").insertOne(formData, (err, result) => {
       if (err) {
         res.send({ error: "Ann error has occured" });
       } else {
         res.send(result.ops[0]);
+        var fs = require("fs");
+        var logger = fs.createWriteStream("sitemap.txt", {
+          flags: "a", // 'a' means appending (old data will be preserved)
+        });
+        console.log(formData._id),
+          logger.write("https://wixten.com/query/" + formData._id);
+        logger.write("\r\n");
       }
     });
   });
