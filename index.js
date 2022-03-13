@@ -16,9 +16,9 @@ app.use(cors());
 // }
 const PORT = process.env.PORT || 5002;
 
-//express().listen(PORT, () => console.log(`Listening on ${PORT}`));
+express().listen(PORT, () => console.log(`Listening on ${PORT}`));
 
-app.listen(process.env.PORT || 5002);
+// app.listen(process.env.PORT || 5002);
 const multer = require("multer");
 const upload = multer();
 var bodyParser = require("body-parser");
