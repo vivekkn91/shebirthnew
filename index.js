@@ -136,6 +136,17 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
   //   console.log(data);
   // });
 
+  app.get("/recent10", function (req, res) {
+    mydb
+      .collection("questions")
+      .find()
+      .sort({ _id: -1 })
+      .limit(10) //here you can limit how many elements you want to retrieve
+      .toArray(function (err, data) {
+        if (err) throw error;
+        res.send(data);
+      });
+  });
   app.get("/questapi", function (req, res) {
     console.log("apicalled");
 
