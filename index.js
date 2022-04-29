@@ -90,7 +90,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
           flags: "a", // 'a' means appending (old data will be preserved)
         });
         console.log(formData._id),
-          logger.write("https://wixten.com/query/" + formData._id);
+          logger.write("https://wixten.com/" + formData._id);
         logger.write("\r\n");
       }
     });
