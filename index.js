@@ -1,12 +1,28 @@
 var moment = require("moment");
 var express = require("express");
-var ObjectId = require("mongodb").ObjectID;
-var bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-var app = express();
-app.listen(5002);
+
+var ObjectId = require("mongodb").ObjectID;
+// var googleTrends = require("google-trends-api");
+// const { ExploreTrendRequest } = require("g-trends");
+var bodyParser = require("body-parser");
+const cors = require("cors");
 const multer = require("multer");
+var app = express();
+app.use(cors());
+// if (process.env.NODE_ENV == "production") {
+//   app.use(express.static("portfolio/build"));
+//   const path = require("path");
+//   app.get("*", (req, res) => {
+//     res.sendFile(path.resolve(__dirname, "portfolio", "build", "index.html"));
+//   });
+// }
+//const PORT = process.env.PORT || 5002;
+
+//express().listen(PORT, () => console.log(`Listening on ${PORT}`));
+app.listen(5002);
+// const multer = require("multer");
 const upload = multer();
 var bodyParser = require("body-parser");
 // const bodyParser = require("body-parser");
@@ -36,29 +52,32 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
   //   if (err) throw err;
   //   console.log("Data created!");
 
-  app.use(function (req, res, next) {
-    // Website you wish to allow to connect
-    res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+  // app.use(function (req, res, next) {
+  //   // Website you wish to allow to connect
+  //   res.setHeader(
+  //     "Access-Control-Allow-Origin",
+  //     "https://ask-over.netlify.app"
+  //   );
 
-    // Request methods you wish to allow
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "GET, POST, OPTIONS, PUT, PATCH, DELETE"
-    );
+  //   // Request methods you wish to allow
+  //   res.setHeader(
+  //     "Access-Control-Allow-Methods",
+  //     "GET, POST, OPTIONS, PUT, PATCH, DELETE"
+  //   );
 
-    // Request headers you wish to allow
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "X-Requested-With,content-type"
-    );
+  //   // Request headers you wish to allow
+  //   res.setHeader(
+  //     "Access-Control-Allow-Headers",
+  //     "X-Requested-With,content-type"
+  //   );
 
-    // Set to true if you need the website to include cookies in the requests sent
-    // to the API (e.g. in case you use sessions)
-    res.setHeader("Access-Control-Allow-Credentials", true);
+  //   // Set to true if you need the website to include cookies in the requests sent
+  //   // to the API (e.g. in case you use sessions)
+  //   res.setHeader("Access-Control-Allow-Credentials", true);
 
-    // Pass to next layer of middleware
-    next();
-  });
+  //   // Pass to next layer of middleware
+  //   next();
+  // });
   app.use(express.urlencoded({ extended: true }));
 
   app.post("/signup", async function (req, res) {
@@ -158,7 +177,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       });
   });
 
-  const upload = multer();
+  // const upload = multer();
   app.post("/add-super-user", upload.none(), function (req, res) {
     // extract the data from the request body
     console.log(req.body);
@@ -195,52 +214,48 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
   app.post("/questionpost", function (req, res) {
     let formData = req.body;
     // let bodyJson = JSON.parse(formData);
-    console.log(formData);
+    console.log(formData.url);
+
+    // append string to your file
 
     mydb.collection("questions").insertOne(formData, (err, result) => {
       if (err) {
         res.send({ error: "Ann error has occured" });
       } else {
         res.send(result.ops[0]);
+        var fs = require("fs");
+        var logger = fs.createWriteStream("sitemap.txt", {
+          flags: "a", // 'a' means appending (old data will be preserved)
+        });
+        console.log(formData._id),
+          logger.write("https://wixten.com/" + formData._id);
+        logger.write("\r\n");
       }
     });
-
-    // mydb
-    //   .collection("questions")
-    //   .insertOne(formData)
-    //   .toArray(function (err, res) {
-    //     if (err) throw err;
-    //     console.log("1 document inserted");
-    //   });
-    // res.send(res);
   });
 
-  // app.post("/questionpost", jsonParser, function (req, res) {
-  //   let data = req;
-  //   console.log(data);
-  // });
+  app.post("/answerpost", function (req, res) {
+    let formData = req.body;
+    // let bodyJson = JSON.parse(formData);
+    // console.log(formData);
 
-  app.get("/questapi", function (req, res) {
-    console.log("apicalled");
-
-    mydb
-      .collection("questions")
-      .find({})
-      .toArray(function (err, data) {
-        if (err) throw error;
-        res.send(data);
-      });
+    mydb.collection("answers").insertOne(formData, (err, result) => {
+      if (err) {
+        res.send({ error: "Ann error has occured" });
+      } else {
+        res.send(result.ops[0]);
+      }
+    });
   });
 
-  app.get("/questone/:gotid", function (req, res) {
+  app.get("/answersapi/:gotid", function (req, res) {
     let id = req.params.gotid;
-    // /console.log(id);
+    console.log(id);
     mydb
-      .collection("questions")
-      .find({ _id: ObjectId(id) })
+      .collection("answers")
+      .find({ question_id: id })
       .toArray(function (err, data) {
         if (err) throw error;
-        console.log(data);
         res.send(data);
       });
   });
@@ -286,61 +301,161 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       });
     });
   });
-  const mime = require("mime-types");
+  // mydb
+  //   .collection("questions")
+  //   .insertOne(formData)
+  //   .toArray(function (err, res) {
+  //     if (err) throw err;
+  //     console.log("1 document inserted");
+  //   });
+  // res.send(res);
+
+  // app.post("/questionpost", jsonParser, function (req, res) {
+  //   let data = req;
+
+  // const express = require("express");
+  // const app = express();
+  const multer = require("multer");
 
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       cb(null, "uploads/");
     },
     filename: (req, file, cb) => {
-      cb(
-        null,
-        file.fieldname + "-" + Date.now() + "." + mime.extension(file.mimetype)
-      );
+      cb(null, Date.now() + "-" + file.originalname);
     },
   });
+
   const uploads = multer({ storage });
 
-  // const uploads = multer({ dest: "uploads/" }); // destination for uploaded files
-
-  // parse application/json and application/x-www-form-urlencoded
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: true }));
+  app.use(express.json()); // for parsing application/json
+  app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
   app.post("/upload", uploads.array("files"), (req, res) => {
-    // req.files is an array of the uploaded files
-    // req.body.description is the text field from the request body
     const files = req.files;
     const description = req.body.description;
-
-    // do something with the files and description
-
-    //     const files = req.files;
-    // const description = req.body.description;
-
-    // Save the file name and description in the "superuser_uploads" collection
-    try {
-      mydb.collection("superuser_uploads").insertOne(
-        {
-          fileName: files[0].originalname,
-          description: description,
-        },
-        (err, result) => {
-          if (err) {
-            console.log(err);
-            res.send("An error occurred while saving the file.");
-          } else {
-            res.send("Upload successful!");
+    const email = req.email;
+    // do something with the files and description here
+    files.forEach((file) => {
+      mydb
+        .collection("superuser_uploads")
+        .insertOne(
+          { file: file.path, description: description },
+          (err, result) => {
+            if (err) {
+              return res
+                .status(500)
+                .json({ error: "Error while uploading file" });
+            }
           }
-        }
-      );
-    } catch (error) {
-      console.log(error);
-      res.send("An error occurred while saving the file.");
-    }
+        );
+    });
+    res.json({ message: "Files uploaded successfully." });
   });
 
-  // app.listen(3000, () => {
-  //   console.log("Server listening on port 3000");
+  // app.listen(5002, () => {
+  //   console.log("Server running on port 5002");
   // });
+
+  //   console.log(data);
+  // });
+
+  app.get("/recent10", function (req, res) {
+    mydb
+      .collection("questions")
+      .find()
+      .sort({ _id: -1 })
+      .limit(10) //here you can limit how many elements you want to retrieve
+      .toArray(function (err, data) {
+        if (err) throw error;
+        res.send(data);
+      });
+  });
+  app.get("/questapi", function (req, res) {
+    console.log("apicalled");
+
+    mydb
+      .collection("questions")
+      .find({})
+      .toArray(function (err, data) {
+        if (err) throw error;
+        res.send(data);
+      });
+  });
+
+  //http://localhost:5002/answerpost
+  // increment;
+
+  app.post("/increment", function (req, res) {
+    let id = req.body;
+    var correctcount = id.correctcount + 1;
+    //var ansid = id.Answer_id;
+    var realid = ObjectId(id.Answer_id);
+    console.log(correctcount);
+
+    // var myquery = { address: "Valley 345" };
+    // var newvalues = { $set: { name: "Mickey", address: "Canyon 123" } };
+    // dbo
+    //   .collection("customers")
+    //   .updateOne(myquery, newvalues, function (err, res) {
+    //     if (err) throw err;
+    //     console.log("1 document updated");
+    //     db.close();
+    //   });
+
+    mydb
+      .collection("answers")
+      .updateOne(
+        { _id: realid },
+        { $set: { correctcount: correctcount } },
+        function (err, data) {
+          if (err) throw err;
+          console.log("1 document updated");
+          res.send(data);
+        }
+      );
+  });
+
+  app.post("/decrementer", function (req, res) {
+    let id = req.body;
+    var wrongcount = id.wrongcount - 1;
+    //var ansid = id.Answer_id;
+    var realid = ObjectId(id.Answer_id);
+    console.log(wrongcount);
+
+    // var myquery = { address: "Valley 345" };
+    // var newvalues = { $set: { name: "Mickey", address: "Canyon 123" } };
+    // dbo
+    //   .collection("customers")
+    //   .updateOne(myquery, newvalues, function (err, res) {
+    //     if (err) throw err;
+    //     console.log("1 document updated");
+    //     db.close();
+    //   });
+
+    mydb
+      .collection("answers")
+      .updateOne(
+        { _id: realid },
+        { $set: { wrongcount: wrongcount } },
+        function (err, data) {
+          if (err) throw err;
+          console.log("1 document updated");
+          res.send(data);
+        }
+      );
+  });
+
+  app.get("/questone/:gotid", function (req, res) {
+    let id = req.params.gotid;
+    // /console.log(id);
+    mydb
+      .collection("questions")
+      .find({ _id: ObjectId(id) })
+      .toArray(function (err, data) {
+        if (err) throw error;
+        //console.log(data);
+        res.send(data);
+      });
+  });
 });
