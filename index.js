@@ -28,12 +28,12 @@ const secretKey = "secretKey";
 // console.log(process.env.ACCESS_TOKEN_SECRET);
 app.use(express.json());
 
-const publicEndpoints = [
-  "/signup",
-  "/login",
-  "/add-super-user",
-  "/login-superuser",
-];
+// const publicEndpoints = [
+//   "/signup",
+//   "/login",
+//   "/add-super-user",
+//   "/login-superuser",
+// ];
 
 var url =
   "mongodb+srv://vivekkn91:VGCJAMTmoyUKnnQa@cluster0.8ykw3.mongodb.net/mydb?retryWrites=true&w=majority";
