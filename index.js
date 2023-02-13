@@ -120,6 +120,14 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
   //     next();
   //   });
   // }
+  app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Origin, X-Requested-With, Content-Type, Accept"
+    );
+    next();
+  });
 
   app.get("/user-details", (req, res) => {
     const authHeader = req.headers["authorization"];
