@@ -89,7 +89,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       useremail: user.email,
       _id: user._id,
     };
-    // let token = jwt.sign(payload, "secretKey");
+    let token = jwt.sign(payload, "secretKey");
     res.json({ token, result: user });
   });
 
