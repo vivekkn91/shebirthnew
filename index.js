@@ -26,7 +26,7 @@ var id = require("mongodb").ObjectID;
 require("dotenv").config();
 const secretKey = "secretKey";
 // console.log(process.env.ACCESS_TOKEN_SECRET);
-app.use(express.json());
+// app.use(express.json());
 
 // const publicEndpoints = [
 //   "/signup",
@@ -89,7 +89,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       useremail: user.email,
       _id: user._id,
     };
-    let token = jwt.sign(payload, "secretKey");
+    // let token = jwt.sign(payload, "secretKey");
     res.json({ token, result: user });
   });
 
