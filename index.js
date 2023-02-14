@@ -51,8 +51,8 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
 
     console.log(formData);
 
-    // const saltRounds = 10;
-    // const hashedPassword = await bcrypt.hash(formData.password, saltRounds);
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(formData.password, saltRounds);
 
     // generate a new token
     const token = jwt.sign({ email: formData.email }, "secretKey");
@@ -60,13 +60,16 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
     // insert user information and token into the database
     mydb
       .collection("signup")
-      .insertOne({ ...formData, token: token }, (err, result) => {
-        if (err) {
-          res.send({ error: "An error has occurred" });
-        } else {
-          res.json({ token, result: result.ops[0] });
+      .insertOne(
+        { ...formData, password: hashedPassword, token: token },
+        (err, result) => {
+          if (err) {
+            res.send({ error: "An error has occurred" });
+          } else {
+            res.json({ token, result: result.ops[0] });
+          }
         }
-      });
+      );
   });
 
   app.post("/login", async function (req, res) {
