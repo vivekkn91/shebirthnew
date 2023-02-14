@@ -13,7 +13,7 @@ const multer = require("multer");
 var app = express();
 app.use(cors());
 
-app.listen(5002);
+app.listen(5003);
 
 const upload = multer();
 var bodyParser = require("body-parser");
@@ -85,7 +85,12 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
         return res.status(401).send({ error: "User not found" });
       }
 
-      if (formData.password !== user.password) {
+      const isPasswordValid = await bcrypt.compare(
+        formData.password,
+        user.password
+      );
+
+      if (!isPasswordValid) {
         return res.status(401).send({ error: "Invalid password" });
       }
 
@@ -100,6 +105,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       res.status(500).send({ error: "Internal server error" });
     }
   });
+
   // function authenticateToken(req, res, next) {
   //   // Get the token from the header
   //   const authHeader = req.headers["authorization"];
