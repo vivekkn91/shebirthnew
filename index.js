@@ -70,40 +70,32 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
   });
 
   app.post("/login", async function (req, res) {
-    let formData = req.body;
+    try {
+      let formData = req.body;
 
-    const user = await mydb
-      .collection("signup")
-      .findOne({ useremail: formData.username });
+      const user = await mydb
+        .collection("signup")
+        .findOne({ useremail: formData.username });
 
-    if (!user) {
-      console.log(user);
-      return res.status(401).send({ error: "User not found" });
+      if (!user) {
+        console.log(user);
+        return res.status(401).send({ error: "User not found" });
+      }
+
+      if (formData.password !== user.password) {
+        return res.status(401).send({ error: "Invalid password" });
+      }
+
+      let payload = {
+        useremail: user.email,
+        _id: user._id,
+      };
+      let token = jwt.sign(payload, "secretKey");
+      res.json({ token, result: user });
+    } catch (error) {
+      console.log(error);
+      res.status(500).send({ error: "Internal server error" });
     }
-
-    if (formData.password !== user.password) {
-      return res.status(401).send({ error: "Invalid password" });
-    }
-
-    let payload = {
-      useremail: user.email,
-      _id: user._id,
-    };
-    let token = jwt.sign(payload, "secretKey");
-    res.json({ token, result: user });
-  });
-
-  app.get("/data", (req, res) => {
-    mydb
-      .collection("data")
-      .find({})
-      .toArray((err, result) => {
-        if (err) {
-          res.send({ error: "An error has occurred" });
-        } else {
-          res.json({ data: result });
-        }
-      });
   });
   // function authenticateToken(req, res, next) {
   //   // Get the token from the header
