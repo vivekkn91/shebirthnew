@@ -329,4 +329,17 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       res.status(200).json({ message: "Data inserted successfully" });
     });
   });
+  app.get("/getfaq", (req, res) => {
+    mydb
+      .collection("faq")
+      .find({})
+      .toArray((err, data) => {
+        if (err) {
+          return res
+            .status(500)
+            .json({ error: "Error while fetching data from collection" });
+        }
+        res.status(200).json({ faqs: data });
+      });
+  });
 });
