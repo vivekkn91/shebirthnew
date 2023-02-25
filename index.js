@@ -2,6 +2,12 @@ var moment = require("moment");
 var express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+// const { Translate } = require("@google-cloud/translate").v2;
+// // const projectId = "YOUR_PROJECT_ID"; // Your Google Cloud Platform project ID
+// const translate = new Translate({
+//   projectId: "shebirthnew",
+//   keyFilename: "PATH_TO_YOUR_KEY_FILE",
+// });
 
 const path = require("path");
 // require("dotenv").config();
