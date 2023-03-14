@@ -77,11 +77,83 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
         }
       );
   });
+  // app.post("/google/signup", async (req, res) => {
+  //   const { email, displayName, token } = req.body;
+
+  //   const user = await mydb.collection("signup").findOne({ email });
+
+  //   if (user) {
+  //     let payload = {
+  //       useremail: user.email,
+  //       _id: user._id,
+  //     };
+
+  //     let token = jwt.sign(payload, "secretKey");
+  //     console.log(token, user);
+
+  //     res.json({ token, result: { ...user, _id: user._id.toString() } });
+  //   } else {
+
+  //     const jwtToken = jwt.sign({ email }, "secretKey");
+
+  //     mydb
+  //       .collection("signup")
+  //       .insertOne({ email, displayName, token, jwtToken }, (err, result) => {
+  //         if (err) {
+  //           res.send({ error: "An error has occurred" });
+  //         } else {
+  //           res.json({ token: jwtToken, result: result.ops[0] });
+  //         }
+  //       });
+  //   }
+  // });
+
+  app.post("/google/signup", async (req, res) => {
+    const { email, displayName, token } = req.body;
+
+    // Check if email already exists in the database
+    const user = await mydb.collection("signup").findOne({ email });
+
+    if (user) {
+      let payload = {
+        useremail: user.email,
+        _id: user._id,
+      };
+
+      let token = jwt.sign(payload, "secretKey");
+      console.log(token, user);
+      // Send the token and user data in response
+      res.json({ token, result: { ...user, _id: user._id.toString() } });
+    } else {
+      // If user does not exist, generate a new token and insert user information into the database
+      const jwtToken = jwt.sign({ email }, "secretKey");
+
+      const newUser = {
+        email,
+        displayName,
+        token,
+        jwtToken,
+      };
+
+      mydb.collection("signup").insertOne(newUser, (err, result) => {
+        if (err) {
+          res.send({ error: "An error has occurred" });
+        } else {
+          // Send the token and user data in response
+          const insertedUser = result.ops[0];
+          res.json({
+            token: jwtToken,
+            result: { ...insertedUser, _id: insertedUser._id.toString() },
+          });
+        }
+      });
+    }
+  });
 
   app.post("/login", async function (req, res) {
     try {
       let formData = req.body;
-
+      console.log(formData);
       const user = await mydb
         .collection("signup")
         .findOne({ useremail: formData.username });
@@ -105,6 +177,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
         _id: user._id,
       };
       let token = jwt.sign(payload, "secretKey");
+      console.log(token, user);
       res.json({ token, result: user });
     } catch (error) {
       console.log(error);
@@ -159,9 +232,20 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
             return res.status(404).json({ error: "User not found" });
           }
           // console.log("User found in database:", foundUser);
-          const { username, useremail, perioddate, birthdate } = foundUser;
-          res.status(200).json({
+          const {
             username,
+            useremail,
+            perioddate,
+            email,
+            birthdate,
+            displayName,
+            name,
+          } = foundUser;
+          res.status(200).json({
+            name,
+            email,
+            username,
+            displayName,
             useremail,
             perioddate,
             birthdate,
@@ -265,44 +349,190 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       });
     });
   });
+  app.post("/addVideo", (req, res) => {
+    const { title, category, description, youtubeUrl } = req.body;
 
-  const multer = require("multer");
+    // Add validation checks here to ensure the required fields are present
+    // and that the YouTube URL is valid before continuing.
 
-  const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, "uploads/");
-    },
-    filename: (req, file, cb) => {
-      cb(null, Date.now() + "-" + file.originalname);
-    },
+    const video = { title, category, description, youtubeUrl };
+    console.log(video);
+    mydb.collection("superuser_uploads").insertOne(video, (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: "Error while adding video" });
+      }
+      res.json({ message: "Video added successfully" });
+    });
   });
 
-  const uploads = multer({ storage });
+  // const storage = multer.diskStorage({
+  //   destination: (req, file, cb) => {
+  //     cb(null, "uploads/");
+  //   },
+  //   filename: (req, file, cb) => {
+  //     cb(null, Date.now() + "-" + file.originalname);
+  //   },
+  // });
 
-  app.use(express.json()); // for parsing application/json
-  app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
-  // app.use("/uploads", express.static(path.join(__dirname, "uploads")));app.use("/uploads", express.static(path.join(__dirname, "uploads")))
-  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-  app.post("/upload", uploads.array("files"), (req, res) => {
-    const files = req.files;
-    const description = req.body.description;
-    const email = req.email;
-    // do something with the files and description here
-    files.forEach((file) => {
-      mydb
-        .collection("superuser_uploads")
-        .insertOne(
-          { file: file.path, description: description },
-          (err, result) => {
-            if (err) {
-              return res
-                .status(500)
-                .json({ error: "Error while uploading file" });
-            }
-          }
-        );
-    });
-    res.json({ message: "Files uploaded successfully." });
+  // const uploads = multer({ storage });
+
+  // app.use(express.json()); // for parsing application/json
+  // app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+  // app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+  // app.post("/upload", uploads.array("files"), (req, res) => {
+  //   const files = req.files;
+  //   const { title, category, description } = req.body;
+  //   const email = req.email;
+  //   // do something with the files, title, category, and description here
+  //   files.forEach((file) => {
+  //     mydb
+  //       .collection("superuser_uploads")
+  //       .insertOne(
+  //         {
+  //           file: file.path,
+  //           title: title,
+  //           category: category,
+  //           description: description,
+  //         },
+  //         (err, result) => {
+  //           if (err) {
+  //             return res
+  //               .status(500)
+  //               .json({ error: "Error while uploading file" });
+  //           }
+  //         }
+  //       );
+  //   });
+  //   res.json({ message: "Files uploaded successfully." });
+  // });
+
+  app.post("/upload", (req, res) => {
+    const { youtubeUrl, title, category, description } = req.body;
+    // const email = req.email;
+    // do something with the link, title, category, and description here
+    mydb.collection("superuser_uploads").insertOne(
+      {
+        youtubeUrl: youtubeUrl,
+        title: title,
+        category: category,
+        description: description,
+      },
+      (err, result) => {
+        if (err) {
+          return res.status(500).json({ error: "Error while uploading link" });
+        }
+        res.json({ message: "Link uploaded successfully." });
+      }
+    );
+  });
+
+  // const storage = multer.diskStorage({
+  //   destination: (req, file, cb) => {
+  //     cb(null, "uploads/");
+  //   },
+  //   filename: (req, file, cb) => {
+  //     cb(null, Date.now() + "-" + file.originalname);
+  //   },
+  // });
+
+  // const uploads = multer({ storage });
+
+  // app.use(express.json()); // for parsing application/json
+  // app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+  // app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+  // app.post("/upload", uploads.array("files"), (req, res) => {
+  //   const files = req.files;
+  //   const { title, category, description } = req.body;
+  //   const email = req.email;
+  //   // do something with the files, title, category, and description here
+  //   files.forEach((file) => {
+  //     mydb.collection("superuser_uploads").insertOne(
+  //       {
+  //         file: file.path,
+  //         title: title,
+  //         category: category,
+  //         description: description,
+  //       },
+  //       (err, result) => {
+  //         if (err) {
+  //           return res
+  //             .status(500)
+  //             .json({ error: "Error while uploading file" });
+  //         }
+  //       }
+  //     );
+  //   });
+  //   res.json({ message: "Files uploaded successfully." });
+  // });
+
+  app.get("/getallCatogories", (req, res) => {
+    mydb
+      .collection("superuser_uploads")
+      .distinct("category", (err, categories) => {
+        if (err) {
+          return res
+            .status(500)
+            .json({ error: "Error while retrieving categories" });
+        }
+        res.json(categories);
+      });
+  });
+  app.get("/getallTitlesByCategory/:category", (req, res) => {
+    const { category } = req.params;
+    mydb
+      .collection("superuser_uploads")
+      .find({ category })
+      .toArray((err, titles) => {
+        if (err) {
+          return res
+            .status(500)
+            .json({ error: "Error while retrieving titles" });
+        }
+        res.json(titles);
+      });
+  });
+  app.get("/getVideosByTitle/:title", (req, res) => {
+    const { title } = req.params;
+    mydb
+      .collection("superuser_uploads")
+      .find({ title })
+      .toArray((err, videos) => {
+        if (err) {
+          return res
+            .status(500)
+            .json({ error: "Error while retrieving videos" });
+        }
+        res.json(videos);
+      });
+  });
+
+  app.get("/getallDAta", (req, res) => {
+    mydb
+      .collection("superuser_uploads")
+      .find()
+      .toArray((err, docs) => {
+        if (err) {
+          return res
+            .status(500)
+            .json({ error: "Error while retrieving files" });
+        }
+        res.json(docs);
+      });
+  });
+
+  app.get("/getallTitleDAta/:category", (req, res) => {
+    const category = req.params.category;
+    mydb
+      .collection("superuser_uploads")
+      .find({ category })
+      .toArray((err, docs) => {
+        if (err) {
+          return res
+            .status(500)
+            .json({ error: "Error while retrieving files" });
+        }
+        res.json(docs);
+      });
   });
 
   app.get("/files", (req, res) => {
