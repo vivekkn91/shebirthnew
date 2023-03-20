@@ -2,13 +2,14 @@ var moment = require("moment");
 var express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
 // const { Translate } = require("@google-cloud/translate").v2;
 // // const projectId = "YOUR_PROJECT_ID"; // Your Google Cloud Platform project ID
 // const translate = new Translate({
 //   projectId: "shebirthnew",
 //   keyFilename: "PATH_TO_YOUR_KEY_FILE",
 // });
-
+const https = require("https");
 const path = require("path");
 // require("dotenv").config();
 var ObjectId = require("mongodb").ObjectID;
@@ -252,6 +253,28 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
           });
         });
     });
+  });
+
+  app.post("/perioddate/update", (req, res) => {
+    const { email, periodDate } = req.body;
+    // update the period date for the user with the given email ID
+    mydb
+      .collection("signup")
+      .updateOne(
+        { email: email },
+        { $set: { perioddate: periodDate } },
+        function (err, result) {
+          if (err) {
+            return res
+              .status(500)
+              .json({ error: "Error while updating period date" });
+          }
+          if (result.modifiedCount === 0) {
+            return res.status(404).json({ error: "User not found" });
+          }
+          res.status(200).json({ success: true });
+        }
+      );
   });
 
   // app.get("/user-details", authenticateToken, (req, res) => {
