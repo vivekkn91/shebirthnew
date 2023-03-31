@@ -3,6 +3,7 @@ var express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
+const Razorpay = require("razorpay");
 // const { Translate } = require("@google-cloud/translate").v2;
 // // const projectId = "YOUR_PROJECT_ID"; // Your Google Cloud Platform project ID
 // const translate = new Translate({
@@ -34,6 +35,23 @@ require("dotenv").config();
 const secretKey = "secretKey";
 // console.log(process.env.ACCESS_TOKEN_SECRET);
 // app.use(express.json());
+
+// const Razorpay = require("razorpay");
+// const razorpay = new Razorpay({
+//   key_id: "rzp_test_opa8cmjEAHsOws",
+//   key_secret: "Q2pQ7rnz2UB4Idbh3lRUGRFH",
+// });
+
+// // Create an order
+// const options = {
+//   amount: 1000, // amount in paise
+//   currency: "INR",
+//   receipt: "order_rcptid_11",
+// };
+
+// razorpay.orders.create(options, function (err, order) {
+//   console.log(order);
+// });
 
 // const publicEndpoints = [
 //   "/signup",
@@ -78,6 +96,31 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
         }
       );
   });
+
+  const razorpay = new Razorpay({
+    key_id: "rzp_test_opa8cmjEAHsOws", // Test API key
+    key_secret: "Q2pQ7rnz2UB4Idbh3lRUGRFH", // Test API secret key
+  });
+
+  app.post("/create-order", (req, res) => {
+    const { amount, currency } = req.body;
+
+    const options = {
+      amount: amount * 100, // amount in paisa
+      currency,
+      receipt: "order_receipt",
+    };
+
+    razorpay.orders.create(options, (err, order) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error creating order" });
+      }
+
+      res.json(order);
+    });
+  });
+
   // app.post("/google/signup", async (req, res) => {
   //   const { email, displayName, token } = req.body;
 
@@ -232,7 +275,6 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
             console.log("User not found in database");
             return res.status(404).json({ error: "User not found" });
           }
-          // console.log("User found in database:", foundUser);
           const {
             username,
             useremail,
@@ -241,6 +283,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
             birthdate,
             displayName,
             name,
+            payment, // include payment details here
           } = foundUser;
           res.status(200).json({
             name,
@@ -250,6 +293,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
             useremail,
             perioddate,
             birthdate,
+            payment,
           });
         });
     });
@@ -275,6 +319,35 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
           res.status(200).json({ success: true });
         }
       );
+  });
+
+  app.post("/paymentsuccess", (req, res) => {
+    console.log(req.body);
+    const { email, date, ...paymentData } = req.body;
+    const paymentDateTime = new Date(); // current date and time
+
+    // update the payment status and date/time for the user with the given email ID
+    mydb.collection("signup").updateOne(
+      { email: email },
+      {
+        $set: {
+          payment: true,
+          paymentDateTime: paymentDateTime,
+          paymentData: paymentData,
+        },
+      },
+      function (err, result) {
+        if (err) {
+          return res
+            .status(500)
+            .json({ error: "Error while updating payment" });
+        }
+        if (result.modifiedCount === 0) {
+          return res.status(404).json({ error: "User not found" });
+        }
+        res.status(200).json({ success: true });
+      }
+    );
   });
 
   // app.get("/user-details", authenticateToken, (req, res) => {
