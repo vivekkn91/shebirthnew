@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const Razorpay = require("razorpay");
+
 // const { Translate } = require("@google-cloud/translate").v2;
 // // const projectId = "YOUR_PROJECT_ID"; // Your Google Cloud Platform project ID
 // const translate = new Translate({
@@ -29,6 +30,7 @@ var bodyParser = require("body-parser");
 app.use(bodyParser.json());
 
 app.use(express.json());
+app.use(express.static("profile-pic"));
 var MongoClient = require("mongodb").MongoClient;
 var id = require("mongodb").ObjectID;
 require("dotenv").config();
@@ -159,15 +161,15 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
     const user = await mydb.collection("signup").findOne({ email });
 
     if (user) {
-      let payload = {
-        useremail: user.email,
-        _id: user._id,
-      };
+      // Get the token from the user data in the database
+      const jwtToken = user.jwtToken;
 
-      let token = jwt.sign(payload, "secretKey");
-      console.log(token, user);
+      console.log(jwtToken, user);
       // Send the token and user data in response
-      res.json({ token, result: { ...user, _id: user._id.toString() } });
+      res.json({
+        token: jwtToken,
+        result: { ...user, _id: user._id.toString() },
+      });
     } else {
       // If user does not exist, generate a new token and insert user information into the database
       const jwtToken = jwt.sign({ email }, "secretKey");
@@ -196,14 +198,12 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
 
   app.post("/login", async function (req, res) {
     try {
-      let formData = req.body;
-      console.log(formData);
+      const formData = req.body;
       const user = await mydb
         .collection("signup")
         .findOne({ useremail: formData.username });
 
       if (!user) {
-        console.log(user);
         return res.status(401).send({ error: "User not found" });
       }
 
@@ -216,19 +216,19 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
         return res.status(401).send({ error: "Invalid password" });
       }
 
-      let payload = {
-        useremail: user.email,
-        _id: user._id,
+      const payload = {
+        _id: user._id.toString(), // Include _id field in the payload
+        useremail: user.useremail,
       };
-      let token = jwt.sign(payload, "secretKey");
-      console.log(token, user);
-      res.json({ token, result: user });
+
+      const token = jwt.sign(payload, "secretKey");
+
+      res.json({ token, result: { ...user, _id: user._id.toString() } }); // Include _id field in the response
     } catch (error) {
       console.log(error);
       res.status(500).send({ error: "Internal server error" });
     }
   });
-
   // function authenticateToken(req, res, next) {
   //   // Get the token from the header
   //   const authHeader = req.headers["authorization"];
@@ -253,6 +253,33 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
     next();
   });
 
+  app.get("/signup-data", async (req, res) => {
+    console.log(req.headers.authorization);
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).send({ message: "Unauthorized" });
+    }
+
+    try {
+      const decodedToken = jwt.verify(token, "secretKey");
+      const signupData = await mydb
+        .collection("signup")
+        .find({ email: decodedToken.email })
+        .toArray();
+
+      if (!signupData || signupData.length === 0) {
+        return res.status(404).send({ message: "User not found" });
+      }
+
+      res.send(signupData[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({ message: "Server error" });
+    }
+  });
+
   app.get("/user-details", (req, res) => {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
@@ -263,7 +290,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       if (err) {
         return res.status(403).json({ error: "Forbidden" });
       }
-      console.log("User ID from JWT payload:", user._id);
+      // console.log("User ID from JWT payload:", user._id);
       // Find the user in the database using the _id from the JWT payload
       mydb
         .collection("signup")
@@ -296,6 +323,101 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
             payment,
           });
         });
+    });
+  });
+
+  // Endpoint to upload user's profile photo
+  const upload = multer({ dest: "./profile-pic" });
+
+  app.post("/upload-photo", upload.single("photo"), (req, res) => {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized request" });
+    }
+    jwt.verify(token, "secretKey", (err, user) => {
+      if (err) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      const userId = user.email || user.useremail;
+      console.log(userId, token);
+      if (!req.file) {
+        return res.status(400).json({ error: "No file was uploaded" });
+      }
+      const photo = req.file;
+      // You might want to validate the file type and size here
+      const fileName = `${userId}-${Date.now()}-${photo.originalname}`;
+      const oldFileName = user.photoUrl && user.photoUrl.split("/").pop();
+      fs.rename(photo.path, `./profile-pic/${fileName}`, function (err) {
+        if (err) {
+          return res.status(500).json({ error: "Error while uploading photo" });
+        }
+        // Delete the previous photo file from the folder
+        if (oldFileName) {
+          fs.unlink(`./profile-pic/${oldFileName}`, function (err) {
+            if (err) {
+              console.log(`Error while deleting ${oldFileName}: `, err);
+            } else {
+              console.log(`${oldFileName} deleted`);
+            }
+          });
+        }
+        // Update the user's profile photo URL in the database
+        mydb.collection("signup").updateOne(
+          { email: user.email || user.useremail },
+          {
+            $set: {
+              photoUrl: `/${fileName}`,
+            },
+          },
+          function (err, result) {
+            if (err) {
+              return res
+                .status(500)
+                .json({ error: "Error while updating database" });
+            }
+            console.log("Photo uploaded and database updated");
+            res.status(200).json({ message: "Photo uploaded successfully" });
+          }
+        );
+      });
+    });
+  });
+
+  app.get("/get-photo", (req, res) => {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized request" });
+    }
+    jwt.verify(token, "secretKey", (err, user) => {
+      if (err) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      const email = user.email || user.useremail;
+      mydb
+        .collection("signup")
+        .findOne(
+          { email },
+          { projection: { photoUrl: 1 } },
+          function (err, result) {
+            if (err) {
+              return res
+                .status(500)
+                .json({ error: "Error while fetching photo URL" });
+            }
+            if (!result) {
+              return res.status(404).json({ error: "User not found" });
+            }
+            const photoUrl = result.photoUrl;
+            if (!photoUrl) {
+              return res
+                .status(404)
+                .json({ error: "User has no profile photo" });
+            }
+            return res.status(200).sendFile(photoUrl, { root: __dirname });
+          }
+        );
     });
   });
 
