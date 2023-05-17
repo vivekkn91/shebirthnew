@@ -328,7 +328,6 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
 
   // Endpoint to upload user's profile photo
   const upload = multer({ dest: "./profile-pic" });
-
   app.post("/upload-photo", upload.single("photo"), (req, res) => {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
@@ -340,19 +339,16 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
         return res.status(403).json({ error: "Forbidden" });
       }
       const userId = user.email || user.useremail;
-      console.log(userId, token);
       if (!req.file) {
         return res.status(400).json({ error: "No file was uploaded" });
       }
       const photo = req.file;
-      // You might want to validate the file type and size here
       const fileName = `${userId}-${Date.now()}-${photo.originalname}`;
       const oldFileName = user.photoUrl && user.photoUrl.split("/").pop();
       fs.rename(photo.path, `./profile-pic/${fileName}`, function (err) {
         if (err) {
           return res.status(500).json({ error: "Error while uploading photo" });
         }
-        // Delete the previous photo file from the folder
         if (oldFileName) {
           fs.unlink(`./profile-pic/${oldFileName}`, function (err) {
             if (err) {
@@ -362,9 +358,10 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
             }
           });
         }
-        // Update the user's profile photo URL in the database
         mydb.collection("signup").updateOne(
-          { email: user.email || user.useremail },
+          {
+            $or: [{ email: user.email }, { useremail: user.useremail }],
+          },
           {
             $set: {
               photoUrl: `/${fileName}`,
@@ -372,18 +369,18 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
           },
           function (err, result) {
             if (err) {
+              console.log("Error while updating database:", err);
               return res
                 .status(500)
                 .json({ error: "Error while updating database" });
             }
-            console.log("Photo uploaded and database updated");
+            console.log("Photo uploaded and database updated", user.useremail);
             res.status(200).json({ message: "Photo uploaded successfully" });
           }
         );
       });
     });
   });
-
   app.get("/get-photo", (req, res) => {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
