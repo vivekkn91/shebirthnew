@@ -345,6 +345,9 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       const photo = req.file;
       const fileName = `${userId}-${Date.now()}-${photo.originalname}`;
       const oldFileName = user.photoUrl && user.photoUrl.split("/").pop();
+
+      console.log("Email used to update signup collection:", userId);
+
       fs.rename(photo.path, `./profile-pic/${fileName}`, function (err) {
         if (err) {
           return res.status(500).json({ error: "Error while uploading photo" });
@@ -358,9 +361,9 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
             }
           });
         }
-        mydb.collection("signup").updateOne(
+        mydb.collection("signup").findOneAndUpdate(
           {
-            $or: [{ email: user.email }, { useremail: user.useremail }],
+            $or: [{ email: userId }, { useremail: userId }],
           },
           {
             $set: {
@@ -374,7 +377,11 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
                 .status(500)
                 .json({ error: "Error while updating database" });
             }
-            console.log("Photo uploaded and database updated", user.useremail);
+            console.log(
+              "Photo uploaded and database updated",
+              user.useremail,
+              user.email
+            );
             res.status(200).json({ message: "Photo uploaded successfully" });
           }
         );
