@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const Razorpay = require("razorpay");
+const nodemailer = require("nodemailer");
 
 // const { Translate } = require("@google-cloud/translate").v2;
 // // const projectId = "YOUR_PROJECT_ID"; // Your Google Cloud Platform project ID
@@ -123,36 +124,62 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
     });
   });
 
-  // app.post("/google/signup", async (req, res) => {
-  //   const { email, displayName, token } = req.body;
+  app.post("/resetpassword", (req, res) => {
+    const { email } = req.body;
 
-  //   const user = await mydb.collection("signup").findOne({ email });
+    // Generate a unique token and store it in the database or cache
+    const token = generateToken();
 
-  //   if (user) {
-  //     let payload = {
-  //       useremail: user.email,
-  //       _id: user._id,
-  //     };
+    // Send the password reset email to the user
+    sendPasswordResetEmail(email, token);
 
-  //     let token = jwt.sign(payload, "secretKey");
-  //     console.log(token, user);
+    res.send("Password reset email sent!");
+  });
+  function generateToken() {
+    const tokenLength = 20;
+    const characters =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let token = "";
 
-  //     res.json({ token, result: { ...user, _id: user._id.toString() } });
-  //   } else {
+    for (let i = 0; i < tokenLength; i++) {
+      token += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
 
-  //     const jwtToken = jwt.sign({ email }, "secretKey");
+    // Store the token in your database or cache for verification later
+    // ...
 
-  //     mydb
-  //       .collection("signup")
-  //       .insertOne({ email, displayName, token, jwtToken }, (err, result) => {
-  //         if (err) {
-  //           res.send({ error: "An error has occurred" });
-  //         } else {
-  //           res.json({ token: jwtToken, result: result.ops[0] });
-  //         }
-  //       });
-  //   }
-  // });
+    return token;
+  }
+
+  function sendPasswordResetEmail(email, token) {
+    // Configure your email transport
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: "vivekkn91@gmail.com",
+        pass: "vsobseatsooqpmot",
+      },
+    });
+
+    // Construct the email
+    const resetLink = `https://shezhealthy.shebirth.com/resetpassword/${email}`;
+
+    const mailOptions = {
+      from: "your-email@gmail.com",
+      to: email,
+      subject: "Password Reset",
+      text: `Click the following link to reset your password: ${resetLink}`,
+    };
+
+    // Send the email
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log("Email sending error:", error);
+      } else {
+        console.log("Email sent:", info.response);
+      }
+    });
+  }
 
   app.post("/google/signup", async (req, res) => {
     const { email, displayName, token } = req.body;
@@ -201,7 +228,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       const formData = req.body;
       const user = await mydb
         .collection("signup")
-        .findOne({ useremail: formData.username });
+        .findOne({ email: formData.username });
 
       if (!user) {
         return res.status(401).send({ error: "User not found" });
@@ -217,33 +244,35 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       }
 
       const payload = {
-        _id: user._id.toString(), // Include _id field in the payload
-        useremail: user.useremail,
+        _id: user._id.toString(),
+        email: user.email,
       };
 
       const token = jwt.sign(payload, "secretKey");
 
-      res.json({ token, result: { ...user, _id: user._id.toString() } }); // Include _id field in the response
+      res.json({ token, result: { ...user, _id: user._id.toString() } });
     } catch (error) {
       console.log(error);
       res.status(500).send({ error: "Internal server error" });
     }
   });
-  // function authenticateToken(req, res, next) {
-  //   // Get the token from the header
-  //   const authHeader = req.headers["authorization"];
-  //   const token = authHeader && authHeader.split(" ")[1];
-  //   // console.log(token);
-  //   if (token == null) return res.sendStatus(401);
-  //   console.log(process.env.ACCESS_TOKEN_SECRET);
-  //   // Verify and decode the token
-  //   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-  //     if (err) console.log(err);
-  //     return res.sendStatus(403);
-  //     req.user = user; //add this line
-  //     next();
-  //   });
-  // }
+
+  function authenticateToken(req, res, next) {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (token == null) return res.sendStatus(401);
+
+    jwt.verify(token, secretKey, (err, user) => {
+      if (err) {
+        console.log(err);
+        return res.sendStatus(403);
+      }
+      req.user = user;
+      next();
+    });
+  }
+
   app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header(
@@ -253,8 +282,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
     next();
   });
 
-  app.get("/signup-data", async (req, res) => {
-    console.log(req.headers.authorization);
+  app.get("/signup-data", authenticateToken, async (req, res) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(" ")[1];
 
@@ -274,6 +302,33 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
       }
 
       res.send(signupData[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({ message: "Server error" });
+    }
+  });
+  app.post("/update-password", async (req, res) => {
+    console.log(req.body);
+
+    const { email, password } = req.body;
+    console.log(req.body);
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    try {
+      const signupData = await mydb.collection("signup").findOneAndUpdate(
+        {
+          email: email,
+        },
+        { $set: { password: hashedPassword } },
+        { returnOriginal: false }
+      );
+      if (!signupData.value) {
+        return res
+          .status(404)
+          .send({ message: "User not found or invalid username" });
+      }
+      res.send({ message: "Password updated successfully" });
     } catch (err) {
       console.error(err);
       res.status(500).send({ message: "Server error" });
