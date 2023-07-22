@@ -226,6 +226,7 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
   app.post("/login", async function (req, res) {
     try {
       const formData = req.body;
+      console.log(formData);
       const user = await mydb
         .collection("signup")
         .findOne({ email: formData.username });
@@ -378,6 +379,68 @@ MongoClient.connect(url, { useUnifiedTopology: true }, function (err, db) {
             payment,
           });
         });
+    });
+  });
+  const jwt = require("jsonwebtoken");
+  const ObjectId = require("mongodb").ObjectID;
+
+  // Update user details (name and perioddate) using the JWT token
+  app.put("/update-user-details", (req, res) => {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized request" });
+    }
+
+    jwt.verify(token, "secretKey", (err, user) => {
+      if (err) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      // Only allow updating name and perioddate fields
+      const { name, perioddate } = req.body;
+
+      // Prepare the update object based on the provided fields
+      const updateObject = {};
+      if (name) {
+        updateObject.name = name;
+      }
+      if (perioddate) {
+        updateObject.perioddate = perioddate;
+      }
+
+      mydb.collection("signup").findOneAndUpdate(
+        { _id: ObjectId(user._id) },
+        { $set: updateObject }, // Update user details based on the request body
+        { returnOriginal: false }, // Return the updated document
+        (err, updatedUser) => {
+          if (err) {
+            return res.status(500).json({ error: "Error while updating user" });
+          }
+          if (!updatedUser.value) {
+            return res.status(404).json({ error: "User not found" });
+          }
+          const {
+            username,
+            useremail,
+            perioddate: updatedPeriodDate,
+            birthdate,
+            displayName,
+            name: updatedName,
+            payment, // Include the existing payment details without updating it
+          } = updatedUser.value;
+          res.status(200).json({
+            name: updatedName,
+            email: useremail, // Use the existing email, not the one from the request
+            username,
+            displayName,
+            useremail,
+            perioddate: updatedPeriodDate, // Use the updated perioddate
+            birthdate,
+            payment, // Use the existing payment details
+          });
+        }
+      );
     });
   });
 
